@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class NIrelandSTV(GregorySTV, MethodPlugin):
-  "N. Ireland STV"
+    "N. Ireland STV"
 
-  methodName = "N. Ireland STV"
-  longMethodName = "N. Ireland STV"
-  status = 1
+    methodName = "N. Ireland STV"
+    longMethodName = "N. Ireland STV"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>The STV rules used for local elections in Northern Ireland are
 similar to the ERS97 rules, but significantly simpler.</p>
 
@@ -428,61 +429,61 @@ of votes shall be made.
 
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    GregorySTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-    self.prec = 2
-    self.weakTieBreakMethod = "forward"
-    self.threshName = ["Droop", "Static", "Whole"]
-    self.delayedTransfer = "On"
-    self.batchElimination = "Losers"
+    def __init__(self, b):
+        GregorySTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-  def sortVotesByTransferValue(self, cList):
-    "Sort votes according to N. Ireland rules."
+        self.prec = 2
+        self.weakTieBreakMethod = "forward"
+        self.threshName = ["Droop", "Static", "Whole"]
+        self.delayedTransfer = "On"
+        self.batchElimination = "Losers"
 
-    self.votesByTransferValue = {}
-    for loser in cList:
-      for i in self.votes[loser]:
-        v = self.transferValue[i]
-        if i in self.batches[loser][0]:
-          key = "first"
+    def sortVotesByTransferValue(self, cList):
+        "Sort votes according to N. Ireland rules."
+
+        self.votesByTransferValue = {}
+        for loser in cList:
+            for i in self.votes[loser]:
+                v = self.transferValue[i]
+                if i in self.batches[loser][0]:
+                    key = "first"
+                else:
+                    key = v
+                if key not in list(self.votesByTransferValue.keys()):
+                    self.votesByTransferValue[key] = []
+                self.votesByTransferValue[key].append(i)
+
+        self.transferValues = list(self.votesByTransferValue.keys())
+        if "first" in self.transferValues:
+            self.transferValues.remove("first")
+            self.transferValues.sort(reverse=True)
+            self.transferValues.insert(0, "first")
         else:
-          key = v
-        if key not in self.votesByTransferValue.keys():
-          self.votesByTransferValue[key] = []
-        self.votesByTransferValue[key].append(i)
+            self.transferValues.sort(reverse=True)
 
-    self.transferValues = self.votesByTransferValue.keys()
-    if "first" in self.transferValues:
-      self.transferValues.remove("first")
-      self.transferValues.sort(reverse=True)
-      self.transferValues.insert(0, "first")
-    else:
-      self.transferValues.sort(reverse=True)      
-
-  def transferVotesFromCandidates(self, elimList):
-    elimList.sort()
-    nTransferValues = len(self.transferValues)
-    if nTransferValues == 0:
-      # This will happen when all eliminated candidates have 0 votes
-      self.updateRound()
-      self.updateWinners()
-      self.roundInfo[self.R]["eliminate"] += \
-          "Count after eliminating %s. No votes are "\
-          "transferred since all eliminated candidates "\
-          "have zero votes. " % self.b.joinList(elimList)
-      self.describeRound()
-    else:
-      self.roundInfo[self.R]["eliminate"] += \
-          "Count after eliminating %s and transferring "\
-          "votes. " % self.b.joinList(elimList)
-      for v in self.transferValues:
-        self.transferVotesWithValue(v)
-        self.updateRound()
-        self.describeRound()
-        if self.electionOver():
-          break
+    def transferVotesFromCandidates(self, elimList):
+        elimList.sort()
+        nTransferValues = len(self.transferValues)
+        if nTransferValues == 0:
+            # This will happen when all eliminated candidates have 0 votes
+            self.updateRound()
+            self.updateWinners()
+            self.roundInfo[self.R]["eliminate"] += (
+                "Count after eliminating %s. No votes are "
+                "transferred since all eliminated candidates "
+                "have zero votes. " % self.b.joinList(elimList)
+            )
+            self.describeRound()
+        else:
+            self.roundInfo[self.R][
+                "eliminate"
+            ] += "Count after eliminating %s and transferring " "votes. " % self.b.joinList(elimList)
+            for v in self.transferValues:
+                self.transferVotesWithValue(v)
+                self.updateRound()
+                self.describeRound()
+                if self.electionOver():
+                    break

@@ -14,21 +14,20 @@
 
 __revision__ = "$Id: RTSTV.py 715 2010-02-27 17:00:55Z jeff.oneill $"
 
-import string
-
 from openstv.STV import OrderDependentSTV
 from openstv.plugins import MethodPlugin
 
 ##################################################################
 
-class RTSTV(OrderDependentSTV, MethodPlugin):
-  "Customizable Random Transfer STV"
-  
-  methodName = "RTSTV"
-  longMethodName = "Random Transfer STV"
-  status = 2
 
-  htmlBody = """
+class RTSTV(OrderDependentSTV, MethodPlugin):
+    "Customizable Random Transfer STV"
+
+    methodName = "RTSTV"
+    longMethodName = "Random Transfer STV"
+    status = 2
+
+    htmlBody = """
 <p>Random transfer STV (RTSTV) is a method that treats each vote as a
 single unit that votes cannot be split up among multiple candidates.
 Because the order of the votes can change the outcome of the election,
@@ -61,53 +60,48 @@ set to "Batch".
 </ul>
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    OrderDependentSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
+    def __init__(self, b):
+        OrderDependentSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-    self.threshName = ["Droop", "Static", "Whole"]
-    self.delayedTransfer = "Off"
-    self.batchElimination = "Zero"
-    self.batchCutoff = 50
-    self.createGuiOptions(["thresh0", "thresh1", "delayedTransfer",
-                          "batchElimination", "batchCutoff"])
+        self.threshName = ["Droop", "Static", "Whole"]
+        self.delayedTransfer = "Off"
+        self.batchElimination = "Zero"
+        self.batchCutoff = 50
+        self.createGuiOptions(["thresh0", "thresh1", "delayedTransfer", "batchElimination", "batchCutoff"])
 
-  def preCount(self):
-    OrderDependentSTV.preCount(self)
+    def preCount(self):
+        OrderDependentSTV.preCount(self)
 
-    self.optionsMsg = "Using a %s threshold." % \
-                      string.join(self.threshName, "-")
-    
-  def transferSurplusVotesFromCandidate(self, cSurplus):
-    "Transfer surplus votes with random transfer rules."
+        self.optionsMsg = "Using a %s threshold." % "-".join(self.threshName)
 
-    # transfer whole votes in excess of the threshold
-    surplus = int(self.count[self.R-1][cSurplus] - self.thresh[self.R-1])
-    for i in self.votes[cSurplus][:surplus]:
-      c = self.b.getTopChoiceFromBallot(i, self.continuing)
-      self.votes[cSurplus].remove(i)
-      if c != None:
-        self.votes[c].append(i)
+    def transferSurplusVotesFromCandidate(self, cSurplus):
+        "Transfer surplus votes with random transfer rules."
 
-    desc = "Count after transferring surplus votes from %s. " \
-         % self.b.names[cSurplus]
-    return desc
+        # transfer whole votes in excess of the threshold
+        surplus = int(self.count[self.R - 1][cSurplus] - self.thresh[self.R - 1])
+        for i in self.votes[cSurplus][:surplus]:
+            c = self.b.getTopChoiceFromBallot(i, self.continuing)
+            self.votes[cSurplus].remove(i)
+            if c != None:
+                self.votes[c].append(i)
 
-  def transferVotesFromCandidates(self, elimList):
-    "Eliminate candidates according to the random transfer rules."
+        desc = "Count after transferring surplus votes from %s. " % self.b.names[cSurplus]
+        return desc
 
-    # Transfer whole votes from losers.
-    for loser in elimList:
-      for i in self.votes[loser]:
-        c = self.b.getTopChoiceFromBallot(i, self.continuing)
-        if c != None:
-          self.votes[c].append(i)
-      self.votes[loser] = []
+    def transferVotesFromCandidates(self, elimList):
+        "Eliminate candidates according to the random transfer rules."
 
-    elimList.sort()
-    desc = "Count after eliminating %s and transferring votes. " \
-          % self.b.joinList(elimList)
-    return desc
+        # Transfer whole votes from losers.
+        for loser in elimList:
+            for i in self.votes[loser]:
+                c = self.b.getTopChoiceFromBallot(i, self.continuing)
+                if c != None:
+                    self.votes[c].append(i)
+            self.votes[loser] = []
+
+        elimList.sort()
+        desc = "Count after eliminating %s and transferring votes. " % self.b.joinList(elimList)
+        return desc

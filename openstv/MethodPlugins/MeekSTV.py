@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class MeekSTV(RecursiveSTV, MethodPlugin):
-  "Meek STV"
+    "Meek STV"
 
-  methodName = "Meek STV"
-  longMethodName = "Meek STV"
-  status = 1
+    methodName = "Meek STV"
+    longMethodName = "Meek STV"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>Meek STV provide more accurate proportional representation than
 other STV methods, but the count must be done with a computer and
 cannot be done by hand.  There are two main differences between Meek
@@ -34,34 +35,33 @@ STV and other STV methods: (1) winning candidates still receive vote
 transfers and (2) when a candidate is eliminated, the votes are
 transferred as if the candidate never entered the election.</p>
 """
-  
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    RecursiveSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    self.createGuiOptions(["prec", "thresh0", "thresh1", "thresh2"])
-    
-  def updateCount(self, tree=None, remainder=None):
-    "Traverse the tree to count the ballots."
-    
-    if tree is None: 
-      tree = self.tree
-    if remainder is None: 
-      remainder = self.p
-    
-    # Iterate over the next candidates on the ballots
-    count = self.count[self.R]
-    keepFactor = self.keepFactor[self.R]
-    p = self.p
-    updateCount = self.updateCount
-    for c in tree:
-      if c == "n" or c == "bi": 
-        continue
-      rrr = remainder
-      count[c] += rrr * keepFactor[c] * tree[c]["n"] / p
-      rrr = rrr * (self.p - keepFactor[c]) / p
-      # If ballot not used up, keep going
-      if rrr > 0:
-        updateCount(tree[c], rrr)
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
+
+    def __init__(self, b):
+        RecursiveSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
+        self.createGuiOptions(["prec", "thresh0", "thresh1", "thresh2"])
+
+    def updateCount(self, tree=None, remainder=None):
+        "Traverse the tree to count the ballots."
+
+        if tree is None:
+            tree = self.tree
+        if remainder is None:
+            remainder = self.p
+
+        # Iterate over the next candidates on the ballots
+        count = self.count[self.R]
+        keepFactor = self.keepFactor[self.R]
+        p = self.p
+        updateCount = self.updateCount
+        for c in tree:
+            if c == "n" or c == "bi":
+                continue
+            rrr = remainder
+            count[c] += rrr * keepFactor[c] * tree[c]["n"] / p
+            rrr = rrr * (self.p - keepFactor[c]) / p
+            # If ballot not used up, keep going
+            if rrr > 0:
+                updateCount(tree[c], rrr)

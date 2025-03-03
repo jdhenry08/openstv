@@ -20,26 +20,26 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
-class MeekQXSTV(RecursiveQXSTV, MeekSTV, MethodPlugin):
-  "Meek STV with guard bits and quasi-exact rounding"
 
-  methodName = "MeekQX STV"
-  longMethodName = "MeekQX STV"
-  status = 2
-  
-  htmlBody = """
+class MeekQXSTV(RecursiveQXSTV, MeekSTV, MethodPlugin):
+    "Meek STV with guard bits and quasi-exact rounding"
+
+    methodName = "MeekQX STV"
+    longMethodName = "MeekQX STV"
+    status = 2
+
+    htmlBody = """
 <p>Jonathan Lundell's "quasi-exact" implementation of Meek STV.
 See David Hill and Jonathan Lundell's paper 
 <i>Notes on the Droop quota</i>, available at
 http://www.votingmatters.org.uk/ISSUE24/I24P2.pdf,
 for a brief description of quasi-exact arithmetic.</p>
 """
-  
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b): 
-    RecursiveQXSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-    self.createGuiOptions(["prec"])
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
+
+    def __init__(self, b):
+        RecursiveQXSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
+
+        self.createGuiOptions(["prec"])

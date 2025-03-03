@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class Approval(NonIterative, MethodPlugin):
-  "Implement approval voting"
+    "Implement approval voting"
 
-  methodName = "Approval"
-  longMethodName = "Approval Voting"
-  status = 1
+    methodName = "Approval"
+    longMethodName = "Approval Voting"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>With approval voting, a voter can approve of as many candidates as
 he or she likes, and the candidate approved of by the greatest number
 of voters is elected.  A voter approves of a candidate by listing the
@@ -34,24 +35,23 @@ candidate on the ballot, and the order of the candidates on the ballot
 makes no difference.</p>
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    NonIterative.__init__(self, b)
-    MethodPlugin.__init__(self)
+    def __init__(self, b):
+        NonIterative.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-  def countBallots(self):
-    "Count the votes using approval voting."
+    def countBallots(self):
+        "Count the votes using approval voting."
 
-    # Count the approvals
-    for i in xrange(self.b.numWeightedBallots):
-      weight, blt = self.b.getWeightedBallot(i)
-      for j in blt:
-        self.count[j] += weight
+        # Count the approvals
+        for i in range(self.b.numWeightedBallots):
+            weight, blt = self.b.getWeightedBallot(i)
+            for j in blt:
+                self.count[j] += weight
 
-    self.msg += "Count of all approvals. "
+        self.msg += "Count of all approvals. "
 
-    # Choose the winners
-    desc = self.chooseWinners()
-    self.msg += desc
+        # Choose the winners
+        desc = self.chooseWinners()
+        self.msg += desc

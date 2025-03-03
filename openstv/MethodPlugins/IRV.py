@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class IRV(NoSurplusSTV, MethodPlugin):
-  "Instant Runoff Voting"
+    "Instant Runoff Voting"
 
-  methodName = "IRV"
-  longMethodName = "Instant Runoff Voting"
-  status = 1
+    methodName = "IRV"
+    longMethodName = "Instant Runoff Voting"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>Instant runoff voting (IRV) is more commonly used to elect one
 candidate but can also be used to provide semi-proportional representation.
 Ballots are first distributed according to their first choices.  The
@@ -42,11 +43,10 @@ repeated until the winners are determined.</p>
 </ul>
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    NoSurplusSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
+    def __init__(self, b):
+        NoSurplusSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-    self.batchElimination = "Zero"
+        self.batchElimination = "Zero"

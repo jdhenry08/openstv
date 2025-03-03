@@ -17,17 +17,18 @@ __revision__ = "$Id: OpenSTV.py 508 2009-04-29 00:51:56Z jco8 $"
 import os.path
 import sys
 
+
 def getHome():
-  if hasattr(sys, "frozen"):
-    if sys.platform == "darwin": # OS X
-      return os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "Resources")
-    return os.path.dirname(sys.executable)
-  else:
-    return os.path.dirname(__file__)
+    if hasattr(sys, "frozen"):
+        if sys.platform == "darwin":  # OS X
+            return os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "Resources")
+        return os.path.dirname(sys.executable)
+    else:
+        return os.path.dirname(__file__)
+
 
 def pluralize(count, singular="", plural="s"):
-  "return singular version if count is 1; else return plural version"
-  if count == 1:
-    return singular
-  return plural
-
+    "return singular version if count is 1; else return plural version"
+    if count == 1:
+        return singular
+    return plural

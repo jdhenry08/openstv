@@ -19,18 +19,18 @@ import string
 
 from openstv.STV import OrderDependentSTV
 from openstv.plugins import MethodPlugin
-from openstv.ballots import Ballots
 
 ##################################################################
 
+
 class CambridgeSTV(OrderDependentSTV, MethodPlugin):
-  "Cambridge STV"
+    "Cambridge STV"
 
-  methodName = "Cambridge STV"
-  longMethodName = "Cambridge STV"
-  status = 1
+    methodName = "Cambridge STV"
+    longMethodName = "Cambridge STV"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>The City of Cambridge, Massachusetts has used the single
 transferable vote to elect its city council and school committee since
 1941.  The statute providing the counting rules is Chapter 54A of
@@ -463,163 +463,161 @@ respect to any election unless at least thirty days prior thereto
 copies of such regulations are available for delivery to such of the
 voters as may request them.</p>
 """
-  
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
-  
-  def __init__(self, b):
-    OrderDependentSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-    self.batchElimination = "Cutoff"
-    self.batchCutoff = 50
-    self.threshName = ["Droop", "Static", "Whole"]
-    self.delayedTransfer = "Off"
-    self.saveWinnersBallots = False
-    self.outputDir = None
-    self.createGuiOptions(["saveWinnersBallots"])
 
-  def checkMinRequirements(self):
-    "Only attempt to count votes if there are enough candidates and voters."
-    
-    OrderDependentSTV.checkMinRequirements(self)
-    if self.b.numBallots < self.batchCutoff * self.numSeats:
-      raise RuntimeError, """\
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
+
+    def __init__(self, b):
+        OrderDependentSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
+
+        self.batchElimination = "Cutoff"
+        self.batchCutoff = 50
+        self.threshName = ["Droop", "Static", "Whole"]
+        self.delayedTransfer = "Off"
+        self.saveWinnersBallots = False
+        self.outputDir = None
+        self.createGuiOptions(["saveWinnersBallots"])
+
+    def checkMinRequirements(self):
+        "Only attempt to count votes if there are enough candidates and voters."
+
+        OrderDependentSTV.checkMinRequirements(self)
+        if self.b.numBallots < self.batchCutoff * self.numSeats:
+            raise RuntimeError(
+                """\
 Not enough ballots to run an election.
-Need at least %d ballots but have only %d.""" % (
-        self.batchCutoff*self.numSeats, self.b.numBallots)
-    
-  def updateCount(self):
-    "Update the vote totals after a transfer of votes."
+Need at least %d ballots but have only %d."""
+                % (self.batchCutoff * self.numSeats, self.b.numBallots)
+            )
 
-    for c in range(self.b.numCandidates):
-      if c in self.winnersEven:
-        # With CambridgeSTV, some winners may have additional votes if a large 
-        # number of votes were not transferable (e.g., no next candidate).
-        self.count[self.R][c] = self.thresh[self.R-1]
-      else:
-        self.count[self.R][c] = len(self.votes[c])
+    def updateCount(self):
+        "Update the vote totals after a transfer of votes."
 
-  
-  def transferSurplusVotesFromCandidate(self, cSurplus):
-    "Transfer surplus votes according to the Cambridge rules."
-    
-    total = self.count[self.R-1][cSurplus]
-    surplus = total - self.thresh[self.R-1]
-    skip = int(round(1.0 * total / surplus)) # decimation factor
-    start = skip - 1                         # starting point
+        for c in range(self.b.numCandidates):
+            if c in self.winnersEven:
+                # With CambridgeSTV, some winners may have additional votes if a large
+                # number of votes were not transferable (e.g., no next candidate).
+                self.count[self.R][c] = self.thresh[self.R - 1]
+            else:
+                self.count[self.R][c] = len(self.votes[c])
 
-    # compute the order in which ballots will be considered for transfer
-    if surplus == 1:
-      order = range(total)
-      order = order[-1:] + order[:-1]
-    else:
-      order = []
-      for i in range(start, start+skip):
-        for j in range(i, total, skip):
-          order.append(j)
-      for i in range(start):
-        order.append(i)
+    def transferSurplusVotesFromCandidate(self, cSurplus):
+        "Transfer surplus votes according to the Cambridge rules."
 
-    # transfer the ballots
-    nTransferred = 0
-    ctng = self.continuing.copy()  # candidates who can receive votes
-    # attempt to transfer votes in the precalculated order
-    cSurplusVotes = self.votes[cSurplus][:] # use this to loop over c0's votes
-    for i in order:   # i is the ith vote of a candidate
-      bi = cSurplusVotes[i]  # bi is the bith ballot
-      # Get the next candidate.
-      # If no next candidate, then the vote is not transferable and
-      # remains with the current candidate.
-      c = self.b.getTopChoiceFromBallot(bi, ctng)
-      if c != None:
-        self.votes[c].append(bi)
-        # If the receiving candidate is now a winner, then that
-        # candidate can no longer receive any more votes.
-        if len(self.votes[c]) >= self.thresh[self.R-1]:
-          ctng.remove(c)
-        self.votes[cSurplus].remove(bi)
-        nTransferred += 1
-      # Check if the entire surplus has been transferred
-      if nTransferred == surplus:
-        break
+        total = self.count[self.R - 1][cSurplus]
+        surplus = total - self.thresh[self.R - 1]
+        skip = int(round(1.0 * total / surplus))  # decimation factor
+        start = skip - 1  # starting point
 
-    desc = "Count after transferring surplus votes from %s by using the "\
-           "Cincinnati method with a skip value of %d. " \
-           % (self.b.names[cSurplus], skip)
-    return desc
+        # compute the order in which ballots will be considered for transfer
+        if surplus == 1:
+            order = list(range(total))
+            order = order[-1:] + order[:-1]
+        else:
+            order = []
+            for i in range(start, start + skip):
+                for j in range(i, total, skip):
+                    order.append(j)
+            for i in range(start):
+                order.append(i)
 
-  def transferVotesFromCandidates(self, elimList):
-    "Eliminate candidate according to the Cambridge rules."
+        # transfer the ballots
+        nTransferred = 0
+        ctng = self.continuing.copy()  # candidates who can receive votes
+        # attempt to transfer votes in the precalculated order
+        cSurplusVotes = self.votes[cSurplus][:]  # use this to loop over c0's votes
+        for i in order:  # i is the ith vote of a candidate
+            bi = cSurplusVotes[i]  # bi is the bith ballot
+            # Get the next candidate.
+            # If no next candidate, then the vote is not transferable and
+            # remains with the current candidate.
+            c = self.b.getTopChoiceFromBallot(bi, ctng)
+            if c != None:
+                self.votes[c].append(bi)
+                # If the receiving candidate is now a winner, then that
+                # candidate can no longer receive any more votes.
+                if len(self.votes[c]) >= self.thresh[self.R - 1]:
+                    ctng.remove(c)
+                self.votes[cSurplus].remove(bi)
+                nTransferred += 1
+            # Check if the entire surplus has been transferred
+            if nTransferred == surplus:
+                break
 
-    # Get rid of candidates without any votes
-    remainingLosers = [c for c in elimList if self.count[self.R-1][c] > 0]
-    eliminationOrder = [c for c in elimList if self.count[self.R-1][c] == 0]
-    eliminationOrder.sort()
+        desc = (
+            "Count after transferring surplus votes from %s by using the "
+            "Cincinnati method with a skip value of %d. " % (self.b.names[cSurplus], skip)
+        )
+        return desc
 
-    # Transfer from candidates with fewest votes first
-    ctng = self.continuing.copy()
-    descTie = ""
-    for i in range(len(remainingLosers)):
-      (loser, desc) = self.breakWeakTie(self.R-1, remainingLosers, "fewest",
-                                        "order of candidate elimination")
-      descTie += desc
-      eliminationOrder.append(loser)
-      remainingLosers.remove(loser)
-      for bi in self.votes[loser]:
-        c = self.b.getTopChoiceFromBallot(bi, ctng)
-        if c != None:
-          self.votes[c].append(bi)
-          # If receiving candidate becomes a winner, then that
-          # candidate can't receive any more votes.
-          if len(self.votes[c]) >= self.thresh[self.R-1]:
-            ctng.remove(c)
+    def transferVotesFromCandidates(self, elimList):
+        "Eliminate candidate according to the Cambridge rules."
 
-      self.votes[loser] = []
+        # Get rid of candidates without any votes
+        remainingLosers = [c for c in elimList if self.count[self.R - 1][c] > 0]
+        eliminationOrder = [c for c in elimList if self.count[self.R - 1][c] == 0]
+        eliminationOrder.sort()
 
-    desc = "Count after eliminating %s and transferring votes. " % \
-         self.b.joinList(eliminationOrder)
-    return desc + descTie
+        # Transfer from candidates with fewest votes first
+        ctng = self.continuing.copy()
+        descTie = ""
+        for i in range(len(remainingLosers)):
+            (loser, desc) = self.breakWeakTie(self.R - 1, remainingLosers, "fewest", "order of candidate elimination")
+            descTie += desc
+            eliminationOrder.append(loser)
+            remainingLosers.remove(loser)
+            for bi in self.votes[loser]:
+                c = self.b.getTopChoiceFromBallot(bi, ctng)
+                if c != None:
+                    self.votes[c].append(bi)
+                    # If receiving candidate becomes a winner, then that
+                    # candidate can't receive any more votes.
+                    if len(self.votes[c]) >= self.thresh[self.R - 1]:
+                        ctng.remove(c)
 
-  def postCount(self):
-    "Save ballots of winners to a file so that vacancies may be filled."
-    OrderDependentSTV.postCount(self)
-    
-    if not self.saveWinnersBallots:
-      return
+            self.votes[loser] = []
 
-    self.msg.append("")
-    self.msg[self.R+1] = "The winning candidates' votes are stored in the "\
-                         "following files:\n"
+        desc = "Count after eliminating %s and transferring votes. " % self.b.joinList(eliminationOrder)
+        return desc + descTie
 
-    # Stuff used for creating a unique valid filename for each candidate
-    assert(os.path.exists(self.outputDir))
-    validChars = string.ascii_letters + string.digits
+    def postCount(self):
+        "Save ballots of winners to a file so that vacancies may be filled."
+        OrderDependentSTV.postCount(self)
 
-    # For each candidate save the candidate's ballots to a unique
-    # filename that starts with the ballot file name.
-    for c in self.winners:
+        if not self.saveWinnersBallots:
+            return
 
-      # Create a unique filename
-      cName = self.b.names[c]
-      cNameNorm = string.join((x for x in cName if x in validChars), "")
-      fName = os.path.join(self.outputDir, cNameNorm + ".blt")
-      i = 1
-      while os.path.exists(fName):
-        i += 1
-        fName = os.path.join(self.outputDir, cNameNorm + str(i) + ".blt")
+        self.msg.append("")
+        self.msg[self.R + 1] = "The winning candidates' votes are stored in the " "following files:\n"
 
-      self.msg[self.R+1] += "    %s -> %s\n" % (cName, fName)
+        # Stuff used for creating a unique valid filename for each candidate
+        assert os.path.exists(self.outputDir)
+        validChars = string.ascii_letters + string.digits
 
-      # Create a new ballots object for each winner
-      candidateBallots = self.b.copy(False)
-      candidateBallots.withdrawn = self.winners.copy()
-      candidateBallots.numSeats = 1
-      candidateBallots.title = "%s's ballots from %s" % (cName, self.b.title)
+        # For each candidate save the candidate's ballots to a unique
+        # filename that starts with the ballot file name.
+        for c in self.winners:
 
-      # Copy the relevant ballots and save
-      for i in self.votes[c]:
-        ballot, ID = self.b.getBallotAndID(i)
-        candidateBallots.appendBallot(ballot, ID)
-      candidateBallots.saveAs(fName)
-      del candidateBallots
+            # Create a unique filename
+            cName = self.b.names[c]
+            cNameNorm = "".join((x for x in cName if x in validChars))
+            fName = os.path.join(self.outputDir, cNameNorm + ".blt")
+            i = 1
+            while os.path.exists(fName):
+                i += 1
+                fName = os.path.join(self.outputDir, cNameNorm + str(i) + ".blt")
+
+            self.msg[self.R + 1] += "    %s -> %s\n" % (cName, fName)
+
+            # Create a new ballots object for each winner
+            candidateBallots = self.b.copy(False)
+            candidateBallots.withdrawn = self.winners.copy()
+            candidateBallots.numSeats = 1
+            candidateBallots.title = "%s's ballots from %s" % (cName, self.b.title)
+
+            # Copy the relevant ballots and save
+            for i in self.votes[c]:
+                ballot, ID = self.b.getBallotAndID(i)
+                candidateBallots.appendBallot(ballot, ID)
+            candidateBallots.saveAs(fName)
+            del candidateBallots

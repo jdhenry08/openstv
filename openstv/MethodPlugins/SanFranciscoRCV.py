@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class SanFranciscoRCV(NoSurplusSTV, MethodPlugin):
-  "San Francisco's implementation of ranked choice voting"
+    "San Francisco's implementation of ranked choice voting"
 
-  methodName = "SanFranciscoRCV"
-  longMethodName = "San Francisco RCV"
-  status = 1
+    methodName = "SanFranciscoRCV"
+    longMethodName = "San Francisco RCV"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>San Francisco enacted instant runoff voting in 2002, and uses the
 name ranked choice voting.  San Francisco's first election with ranked
 choice voting was in 2004 and it has been used annually since then.
@@ -118,12 +119,11 @@ votes shall qualify to have their names placed on the ballot for a
 runoff election held on the second Tuesday in December of 2002.</p>
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    NoSurplusSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
+    def __init__(self, b):
+        NoSurplusSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-    self.batchElimination = "Losers"
-    self.weakTieBreakMethod = "strong"
+        self.batchElimination = "Losers"
+        self.weakTieBreakMethod = "strong"

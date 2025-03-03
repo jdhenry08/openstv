@@ -19,15 +19,16 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class SuppVote(NoSurplusSTV, MethodPlugin):
-  "Supplemental Vote"
+    "Supplemental Vote"
 
-  methodName = "Supplemental Vote"
-  longMethodName = "Supplemental Vote"
-  onlySingleWinner = True
-  status = 2
+    methodName = "Supplemental Vote"
+    longMethodName = "Supplemental Vote"
+    onlySingleWinner = True
+    status = 2
 
-  htmlBody = """
+    htmlBody = """
 <p>The supplemental vote is a simplified version of IRV.  Only the first
 two rankings on the ballots are used.  In the first round, the first
 rankings are counted and all candidates except for the top two are
@@ -36,22 +37,20 @@ second rankings.  The supplemental vote is used to elect the Mayor of
 London.</p>
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
-  
-  def __init__(self, b):
-    NoSurplusSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-  def selectCandidatesToEliminate(self):
-    "Eliminate all candidates except for the top two."
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-    (topTwo, desc) = self.chooseNfromM(2, self.count[0], self.continuing,
-                                       "top two candidates")
-    loserList = []
-    for c in self.continuing:
-      if c not in topTwo:
-        loserList.append(c)
+    def __init__(self, b):
+        NoSurplusSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-    self.newLosers(loserList)        
-    return (loserList, desc)
+    def selectCandidatesToEliminate(self):
+        "Eliminate all candidates except for the top two."
+
+        (topTwo, desc) = self.chooseNfromM(2, self.count[0], self.continuing, "top two candidates")
+        loserList = []
+        for c in self.continuing:
+            if c not in topTwo:
+                loserList.append(c)
+
+        self.newLosers(loserList)
+        return (loserList, desc)

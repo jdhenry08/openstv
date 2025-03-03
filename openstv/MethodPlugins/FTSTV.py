@@ -14,21 +14,20 @@
 
 __revision__ = "$Id: FTSTV.py 715 2010-02-27 17:00:55Z jeff.oneill $"
 
-import string
-
 from openstv.STV import WeightedInclusiveSTV
 from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class FTSTV(WeightedInclusiveSTV, MethodPlugin):
-  "Customizable Fractional Transfer STV"
+    "Customizable Fractional Transfer STV"
 
-  methodName = "FTSTV"
-  longMethodName = "Fractional Transfer STV"
-  status = 2
+    methodName = "FTSTV"
+    longMethodName = "Fractional Transfer STV"
+    status = 2
 
-  htmlBody = """
+    htmlBody = """
 <p>Fractional transfer STV (FTSTV) is similar to the rules used in
 Scotland and is sometimes referred to as the wieighted-inclusive
 Gregory method (WIGM).  This implementation contains several options
@@ -66,27 +65,23 @@ set to "Batch".
 
 </ul>
 """
-  
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + \
-             MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    WeightedInclusiveSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-    self.prec = 6
-    self.threshName = ["Droop", "Static", "Whole"]
-    self.delayedTransfer = "Off"
-    self.batchElimination = "Zero"
-    self.batchCutoff = 0
-    self.createGuiOptions(["prec", "thresh0", "thresh1", "thresh2",
-                          "delayedTransfer", "batchElimination",
-                          "batchCutoff"])
+    def __init__(self, b):
+        WeightedInclusiveSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-  def preCount(self):
-    WeightedInclusiveSTV.preCount(self)
+        self.prec = 6
+        self.threshName = ["Droop", "Static", "Whole"]
+        self.delayedTransfer = "Off"
+        self.batchElimination = "Zero"
+        self.batchCutoff = 0
+        self.createGuiOptions(
+            ["prec", "thresh0", "thresh1", "thresh2", "delayedTransfer", "batchElimination", "batchCutoff"]
+        )
 
-    self.optionsMsg = "Using a %s threshold." % \
-                      string.join(self.threshName, "-")
-    
+    def preCount(self):
+        WeightedInclusiveSTV.preCount(self)
+
+        self.optionsMsg = "Using a %s threshold." % "-".join(self.threshName)

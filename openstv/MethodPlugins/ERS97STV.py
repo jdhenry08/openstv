@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class ERS97STV(GregorySTV, MethodPlugin):
-  "ERS97 STV"
+    "ERS97 STV"
 
-  methodName = "ERS97 STV"
-  longMethodName = "ERS97 STV"
-  status = 1
+    methodName = "ERS97 STV"
+    longMethodName = "ERS97 STV"
+    status = 1
 
-  htmlBody = """
+    htmlBody = """
 <p>The Electoral Reform Society of Great Britian and Ireland has
 issued its recommended rules for implementing the single transferable
 vote.  The most recent version of its rules issued in 1997 and is
@@ -494,228 +495,232 @@ adequately represent the electorate until the next election.
 
 """
 
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):    
-    GregorySTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-    self.prec = 2
-    self.weakTieBreakMethod = "forward"
-    self.threshName = ["ERS97", "Dynamic", "Fractional"]
-    self.delayedTransfer = "On"
-    self.batchElimination = "LosersERS97"
-    self.numStages = 0
+    def __init__(self, b):
+        GregorySTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-  def preCount(self):
-    GregorySTV.preCount(self)
-    
-    # Data structures needed only for ERS97 rules.
-    # ERS97 rules contain stages and substages, but each of these is a round.
-    # Example:
-    #   R S
-    #   ---
-    #   1 1
-    #   2 2
-    #   3
-    #   4 3
-    # We need to compute all of the rounds but only print the stages.
-    # Round 3 is a substage between stages 2 and 3.  Substages occur when
-    # transferring ballots from eliminated candidate and different ballots
-    # have different values.  The stage involves transferring all of the
-    # ballots, but each substage involves transferring ballots of a given
-    # value.
-    self.quota = []
-    self.S = 0
-    self.stages = []    # Stores rounds for each stage
-                        # [ [0] [1] [2] [3 4] [5] ... ]
+        self.prec = 2
+        self.weakTieBreakMethod = "forward"
+        self.threshName = ["ERS97", "Dynamic", "Fractional"]
+        self.delayedTransfer = "On"
+        self.batchElimination = "LosersERS97"
+        self.numStages = 0
 
-  def postCount(self):
-    GregorySTV.postCount(self)
-    self.numStages = self.S+1
-  
-  def roundToStage(self, r):
-    "Return the stage corresponding to a given round."
-    for s in range(len(self.stages)):
-      if r in self.stages[s]: 
-        return s
-    assert(0)
+    def preCount(self):
+        GregorySTV.preCount(self)
 
-  def allocateRound(self):
-    "Add quota allocation."
+        # Data structures needed only for ERS97 rules.
+        # ERS97 rules contain stages and substages, but each of these is a round.
+        # Example:
+        #   R S
+        #   ---
+        #   1 1
+        #   2 2
+        #   3
+        #   4 3
+        # We need to compute all of the rounds but only print the stages.
+        # Round 3 is a substage between stages 2 and 3.  Substages occur when
+        # transferring ballots from eliminated candidate and different ballots
+        # have different values.  The stage involves transferring all of the
+        # ballots, but each substage involves transferring ballots of a given
+        # value.
+        self.quota = []
+        self.S = 0
+        self.stages = []  # Stores rounds for each stage
+        # [ [0] [1] [2] [3 4] [5] ... ]
 
-    GregorySTV.allocateRound(self)
-    self.quota.append(0)
-    # These are copied from the previous round.  Depending on the situation,
-    # they will be reused or updated in place.
-    if self.R > 0:
-      self.quota[self.R] = self.quota[self.R-1]
-      self.thresh[self.R] = self.thresh[self.R-1]
+    def postCount(self):
+        GregorySTV.postCount(self)
+        self.numStages = self.S + 1
 
-  def updateThresh(self):
-    "Compute the value of the ERS97 winning threshold."
+    def roundToStage(self, r):
+        "Return the stage corresponding to a given round."
+        for s in range(len(self.stages)):
+            if r in self.stages[s]:
+                return s
+        assert 0
 
-    assert(self.threshName[0] == "ERS97")
-    assert(self.threshName[1] == "Dynamic")
-    assert(self.threshName[2] == "Fractional")
+    def allocateRound(self):
+        "Add quota allocation."
 
-    # The quota is recalculated at every round until there is at
-    # least one winner.  Afterwards it is just repeated.
-    if len(self.winners) == 0:
-      quota, r = divmod(self.p*self.b.numBallots - 
-                        self.exhausted[self.R],
-                        self.numSeats+1)
-      if r > 0: 
-        quota += 1
-      if self.R == 0:
-        desc = "The initial quota is %s. " % self.displayValue(quota)
-      else:
-        desc = "Since no candidate has been elected, the quota is reduced "\
-                "to %s. " % self.displayValue(quota)
-      self.roundInfo[self.R]["quota"] = desc
-    else:
-      quota = self.quota[self.R]
+        GregorySTV.allocateRound(self)
+        self.quota.append(0)
+        # These are copied from the previous round.  Depending on the situation,
+        # they will be reused or updated in place.
+        if self.R > 0:
+            self.quota[self.R] = self.quota[self.R - 1]
+            self.thresh[self.R] = self.thresh[self.R - 1]
 
-    # The winning threshold changes every round.  See ERS97 rules
-    # for an explanation.
-    totalActiveVote = 0
-    for c in self.continuing | self.losers:
-      totalActiveVote += self.count[self.R][c]
-    for c in self.winnersOver:
-      if self.count[self.R][c] > quota:
-        totalActiveVote += self.count[self.R][c] - quota
-    numSeatsRemaining = self.numSeats - len(self.winners)
-    if numSeatsRemaining > 0:
-      thresh, r = divmod(totalActiveVote, numSeatsRemaining+1)
-      if r > 0: 
-        thresh += 1
-    else:
-      thresh = self.thresh[self.R]
+    def updateThresh(self):
+        "Compute the value of the ERS97 winning threshold."
 
-    self.quota[self.R] = quota
-    self.thresh[self.R] = thresh
+        assert self.threshName[0] == "ERS97"
+        assert self.threshName[1] == "Dynamic"
+        assert self.threshName[2] == "Fractional"
 
-  def updateSurplus(self):
-    "Compute the threshold and surplus for current round."
+        # The quota is recalculated at every round until there is at
+        # least one winner.  Afterwards it is just repeated.
+        if len(self.winners) == 0:
+            quota, r = divmod(self.p * self.b.numBallots - self.exhausted[self.R], self.numSeats + 1)
+            if r > 0:
+                quota += 1
+            if self.R == 0:
+                desc = "The initial quota is %s. " % self.displayValue(quota)
+            else:
+                desc = "Since no candidate has been elected, the quota is reduced " "to %s. " % self.displayValue(quota)
+            self.roundInfo[self.R]["quota"] = desc
+        else:
+            quota = self.quota[self.R]
 
-    # Update surplus
-    self.surplus[self.R] = 0
-    for c in self.winnersOver | self.continuing:
-      if self.count[self.R][c] > self.quota[self.R]:
-        self.surplus[self.R] += self.count[self.R][c] - self.quota[self.R]
+        # The winning threshold changes every round.  See ERS97 rules
+        # for an explanation.
+        totalActiveVote = 0
+        for c in self.continuing | self.losers:
+            totalActiveVote += self.count[self.R][c]
+        for c in self.winnersOver:
+            if self.count[self.R][c] > quota:
+                totalActiveVote += self.count[self.R][c] - quota
+        numSeatsRemaining = self.numSeats - len(self.winners)
+        if numSeatsRemaining > 0:
+            thresh, r = divmod(totalActiveVote, numSeatsRemaining + 1)
+            if r > 0:
+                thresh += 1
+        else:
+            thresh = self.thresh[self.R]
 
-  def updateWinners(self):
-    "Find new winning candidates."
+        self.quota[self.R] = quota
+        self.thresh[self.R] = thresh
 
-    # ERS97 is a pain because it can happen that there is one more
-    # candidate over thresh than there are spots remaining!
-    # If this happens there will be a tie.
+    def updateSurplus(self):
+        "Compute the threshold and surplus for current round."
 
-    # When there are not enough votes, thresh can go to 0.00.
-    # When this happens, every remaining candidate would be a winner
-    # (even those with 0 votes).  Require at least 0.01 votes to be a
-    # winner.
+        # Update surplus
+        self.surplus[self.R] = 0
+        for c in self.winnersOver | self.continuing:
+            if self.count[self.R][c] > self.quota[self.R]:
+                self.surplus[self.R] += self.count[self.R][c] - self.quota[self.R]
 
-    # count the number of winners
-    if not self.roundInfo[self.R].has_key("winners"):
-      self.roundInfo[self.R]["winners"] = ""
-    potentialWinnersList = []
-    for c in self.continuing:
-      if self.count[self.R][c] >= max(self.thresh[self.R], 1):
-        potentialWinnersList.append(c)
+    def updateWinners(self):
+        "Find new winning candidates."
 
-    # if there is an extra do tie breaking
-    assert(len(potentialWinnersList) + len(self.winners) <= self.numSeats + 1)
-    if len(potentialWinnersList) + len(self.winners) == self.numSeats + 1:
-      (c, desc) = self.breakWeakTie(self.R, potentialWinnersList, "fewest",
-                                     "a candidate over threshold to eliminate")
-      potentialWinnersList.remove(c)
-      self.roundInfo[self.R]["winners"] += desc
+        # ERS97 is a pain because it can happen that there is one more
+        # candidate over thresh than there are spots remaining!
+        # If this happens there will be a tie.
 
-    # change status of all winners
-    if len(potentialWinnersList) > 0:
-      potentialWinnersList.sort(key=lambda a, f=self.count[self.R]: -f[a])
-      self.roundInfo[self.R]["winners"] += self.newWinners(potentialWinnersList)
-      self.updateThresh()
-      self.updateSurplus()
-      # lowered threshold could create new winners
-      if len(self.winners) < self.numSeats:
-        self.updateWinners()
+        # When there are not enough votes, thresh can go to 0.00.
+        # When this happens, every remaining candidate would be a winner
+        # (even those with 0 votes).  Require at least 0.01 votes to be a
+        # winner.
 
-  def sortVotesByTransferValue(self, cList):
-    "Sort votes according to ERS97 rules."
+        # count the number of winners
+        if "winners" not in self.roundInfo[self.R]:
+            self.roundInfo[self.R]["winners"] = ""
+        potentialWinnersList = []
+        for c in self.continuing:
+            if self.count[self.R][c] >= max(self.thresh[self.R], 1):
+                potentialWinnersList.append(c)
 
-    self.votesByTransferValue = {}
-    for loser in cList:
-      for i in self.votes[loser]:
-        v = self.transferValue[i]
-        if v not in self.votesByTransferValue.keys():
-          self.votesByTransferValue[v] = []
-        self.votesByTransferValue[v].append(i)
+        # if there is an extra do tie breaking
+        assert len(potentialWinnersList) + len(self.winners) <= self.numSeats + 1
+        if len(potentialWinnersList) + len(self.winners) == self.numSeats + 1:
+            (c, desc) = self.breakWeakTie(
+                self.R, potentialWinnersList, "fewest", "a candidate over threshold to eliminate"
+            )
+            potentialWinnersList.remove(c)
+            self.roundInfo[self.R]["winners"] += desc
 
-    self.transferValues = self.votesByTransferValue.keys()
-    self.transferValues.sort(reverse=True)
+        # change status of all winners
+        if len(potentialWinnersList) > 0:
+            potentialWinnersList.sort(key=lambda a, f=self.count[self.R]: -f[a])
+            self.roundInfo[self.R]["winners"] += self.newWinners(potentialWinnersList)
+            self.updateThresh()
+            self.updateSurplus()
+            # lowered threshold could create new winners
+            if len(self.winners) < self.numSeats:
+                self.updateWinners()
 
-  def describeRound(self, nonFinalSubstage=False):
-    
-    if self.roundInfo[self.R]["action"][0] == "first":
-      text = "Count of first choices. "
-    elif self.roundInfo[self.R]["action"][0] == "surplus":
-      text = self.roundInfo[self.R]["surplus"]
-    elif self.roundInfo[self.R]["action"][0] == "eliminate":
-      text = self.roundInfo[self.R]["eliminate"]
-      
-    if self.roundInfo[self.R].has_key("quota"):
-      text += self.roundInfo[self.R]["quota"]
-    
-    if self.roundInfo[self.R].has_key("winners"):
-      text += self.roundInfo[self.R]["winners"]
-      
-    # Explain what will happen in the next round
-    if self.electionOver() or nonFinalSubstage:
-      text += ""
-    elif self.surplus[self.R] == 0:
-      text += "No candidates have surplus votes so candidates will be "\
-           "eliminated and their votes transferred for the next round. "
-    elif self.delayedTransfer == "On" and len(self.getSureLosers(self.R)) != 0:
-      text += "Candidates have surplus votes, but since "\
-           "candidates can be safely eliminated, the transfer of surplus "\
-           "votes will be delayed and candidates will be eliminated and their "\
-           "votes transferred for the next round."
-    else:
-      text += "Candidates have surplus votes so "\
-           "surplus votes will be transferred for the next round. "
+    def sortVotesByTransferValue(self, cList):
+        "Sort votes according to ERS97 rules."
 
-    self.msg[self.R] = text
+        self.votesByTransferValue = {}
+        for loser in cList:
+            for i in self.votes[loser]:
+                v = self.transferValue[i]
+                if v not in list(self.votesByTransferValue.keys()):
+                    self.votesByTransferValue[v] = []
+                self.votesByTransferValue[v].append(i)
 
-  def transferVotesFromCandidates(self, elimList):
-    elimList.sort()
-    nTransferValues = len(self.transferValues)
-    if nTransferValues == 0:
-      # This will happen when all eliminated candidates have 0 votes
-      self.updateRound()
-      self.updateWinners()
-      self.roundInfo[self.R]["eliminate"] += \
-          "Count after eliminating %s. No votes are "\
-          "transferred since all eliminated candidates "\
-          "have zero votes. " % self.b.joinList(elimList)
-      self.describeRound()
-    else:
-      for i, v in enumerate(self.transferValues):
-        if i != 0:
-          self.R += 1
-          self.allocateRound()
-          self.roundInfo[self.R]["eliminate"] = ""
-          self.roundInfo[self.R]["action"] = self.roundInfo[self.R-1]["action"]
-          self.stages[self.S].append(self.R)
-        self.roundInfo[self.R]["eliminate"] += \
-            "Count after substage %d of %d of eliminating "\
-            "%s. Transferred votes with value %s. "\
-            % (i+1, nTransferValues, self.b.joinList(elimList),
-               self.displayValue(v))
-        self.transferVotesWithValue(v)
-        self.updateRound()
-        self.describeRound(i+1 < nTransferValues)
-        if self.electionOver():
-          break
+        self.transferValues = list(self.votesByTransferValue.keys())
+        self.transferValues.sort(reverse=True)
+
+    def describeRound(self, nonFinalSubstage=False):
+
+        if self.roundInfo[self.R]["action"][0] == "first":
+            text = "Count of first choices. "
+        elif self.roundInfo[self.R]["action"][0] == "surplus":
+            text = self.roundInfo[self.R]["surplus"]
+        elif self.roundInfo[self.R]["action"][0] == "eliminate":
+            text = self.roundInfo[self.R]["eliminate"]
+
+        if "quota" in self.roundInfo[self.R]:
+            text += self.roundInfo[self.R]["quota"]
+
+        if "winners" in self.roundInfo[self.R]:
+            text += self.roundInfo[self.R]["winners"]
+
+        # Explain what will happen in the next round
+        if self.electionOver() or nonFinalSubstage:
+            text += ""
+        elif self.surplus[self.R] == 0:
+            text += (
+                "No candidates have surplus votes so candidates will be "
+                "eliminated and their votes transferred for the next round. "
+            )
+        elif self.delayedTransfer == "On" and len(self.getSureLosers(self.R)) != 0:
+            text += (
+                "Candidates have surplus votes, but since "
+                "candidates can be safely eliminated, the transfer of surplus "
+                "votes will be delayed and candidates will be eliminated and their "
+                "votes transferred for the next round."
+            )
+        else:
+            text += "Candidates have surplus votes so " "surplus votes will be transferred for the next round. "
+
+        self.msg[self.R] = text
+
+    def transferVotesFromCandidates(self, elimList):
+        elimList.sort()
+        nTransferValues = len(self.transferValues)
+        if nTransferValues == 0:
+            # This will happen when all eliminated candidates have 0 votes
+            self.updateRound()
+            self.updateWinners()
+            self.roundInfo[self.R]["eliminate"] += (
+                "Count after eliminating %s. No votes are "
+                "transferred since all eliminated candidates "
+                "have zero votes. " % self.b.joinList(elimList)
+            )
+            self.describeRound()
+        else:
+            for i, v in enumerate(self.transferValues):
+                if i != 0:
+                    self.R += 1
+                    self.allocateRound()
+                    self.roundInfo[self.R]["eliminate"] = ""
+                    self.roundInfo[self.R]["action"] = self.roundInfo[self.R - 1]["action"]
+                    self.stages[self.S].append(self.R)
+                self.roundInfo[self.R][
+                    "eliminate"
+                ] += "Count after substage %d of %d of eliminating " "%s. Transferred votes with value %s. " % (
+                    i + 1,
+                    nTransferValues,
+                    self.b.joinList(elimList),
+                    self.displayValue(v),
+                )
+                self.transferVotesWithValue(v)
+                self.updateRound()
+                self.describeRound(i + 1 < nTransferValues)
+                if self.electionOver():
+                    break

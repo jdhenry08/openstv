@@ -19,14 +19,15 @@ from openstv.plugins import MethodPlugin
 
 ##################################################################
 
+
 class GPCA2000STV(WeightedInclusiveSTV, MethodPlugin):
-  "Green Party of California STV"
+    "Green Party of California STV"
 
-  methodName = "GPCA2000 STV"
-  longMethodName = "Green Party of California STV"
-  status = 2
+    methodName = "GPCA2000 STV"
+    longMethodName = "Green Party of California STV"
+    status = 2
 
-  htmlBody = """
+    htmlBody = """
 <p>The Green Party of California (GPCA) adopted these rules in 2000.
 The rules are described in the GPCA bylaws, available at
 http://cagreens.org/bylaws/.  The rules are based on the
@@ -42,24 +43,23 @@ paper <i>Random tie-breaking in STV</i>, available at
 http://www.votingmatters.org.uk/ISSUE22/I22P1.pdf,
 for the rationale.</p>
 """
-  
-  htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) +\
-             htmlBody + MethodPlugin.htmlEnd
 
-  def __init__(self, b):
-    WeightedInclusiveSTV.__init__(self, b)
-    MethodPlugin.__init__(self)
-    
-    self.prec = 5
-    self.weakTieBreakMethod = "strong"	# treat all ties as strong
-    self.threshName = ["Droop", "Static", "Fractional"]
-    self.delayedTransfer = "Off"
-    self.batchElimination = "Zero"
-    # Election is over when we have enough winners or all candidates
-    # have been eliminated.
-    self.stopCond = ["Know Winners", "Continuing Empty"]
+    htmlHelp = (MethodPlugin.htmlBegin % (longMethodName, longMethodName)) + htmlBody + MethodPlugin.htmlEnd
 
-  def updateCandidateStatus(self):
-    "Update candidate status at end of election."
+    def __init__(self, b):
+        WeightedInclusiveSTV.__init__(self, b)
+        MethodPlugin.__init__(self)
 
-    self.newLosers(list(self.continuing))
+        self.prec = 5
+        self.weakTieBreakMethod = "strong"  # treat all ties as strong
+        self.threshName = ["Droop", "Static", "Fractional"]
+        self.delayedTransfer = "Off"
+        self.batchElimination = "Zero"
+        # Election is over when we have enough winners or all candidates
+        # have been eliminated.
+        self.stopCond = ["Know Winners", "Continuing Empty"]
+
+    def updateCandidateStatus(self):
+        "Update candidate status at end of election."
+
+        self.newLosers(list(self.continuing))

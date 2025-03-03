@@ -14,83 +14,95 @@
 
 from openstv.plugins import ReportPlugin
 
+
 class YamlReport(ReportPlugin):
-  "Return a YAML  report."
+    "Return a YAML  report."
 
-  status = 0
-  reportName = "YAML"
-  
-  def __init__(self, e, outputFile=None, test=False):
-    ReportPlugin.__init__(self, e, outputFile, test)
-    
-    if self.e.methodName == "Condorcet":
-      raise RuntimeError, "YAML report not available for Condorcet elections."
+    status = 0
+    reportName = "YAML"
 
-  def generateHeader(self):
-    winners = list(self.e.winners)
-    winners.sort()
-    header = "---\nWinners: %s\nRound:\n" % str(winners)
-    self.output(header)
-    
-  def generateReportNonIterative(self):
+    def __init__(self, e, outputFile=None, test=False):
+        ReportPlugin.__init__(self, e, outputFile, test)
 
-    self.generateHeader()
+        if self.e.methodName == "Condorcet":
+            raise RuntimeError("YAML report not available for Condorcet elections.")
 
-    tally = str([self.e.displayValue(x) for x in self.e.count] + 
-                [self.e.displayValue(self.e.exhausted)])
-    won = list(self.e.winners)
-    won.sort()
-    won = str(won)
-    lost = list(self.e.losers)
-    lost.sort()
-    lost = str(lost)
-    xfer = "[]"
+    def generateHeader(self):
+        winners = list(self.e.winners)
+        winners.sort()
+        header = "---\nWinners: %s\nRound:\n" % str(winners)
+        self.output(header)
 
-    roundLine = """\
+    def generateReportNonIterative(self):
+
+        self.generateHeader()
+
+        tally = str([self.e.displayValue(x) for x in self.e.count] + [self.e.displayValue(self.e.exhausted)])
+        won = list(self.e.winners)
+        won.sort()
+        won = str(won)
+        lost = list(self.e.losers)
+        lost.sort()
+        lost = str(lost)
+        xfer = "[]"
+
+        roundLine = """\
  -
   Stage: %d
   Tally: %s
   Won:   %s
   Lost:  %s
   Xfer:  %s
-""" % (1, tally, won, lost, xfer)
-    
-    self.output(roundLine)
+""" % (
+            1,
+            tally,
+            won,
+            lost,
+            xfer,
+        )
 
-  def generateReportIterative(self):
+        self.output(roundLine)
 
-    self.generateHeader()
+    def generateReportIterative(self):
 
-    for r in range(self.e.numRounds):
-      roundStage = r
-      if self.e.methodName == "ERS97 STV":
-        roundStage = self.e.roundToStage(r)
-      
-      index = str(roundStage + 1)
-      tally = ", ".join([self.e.displayValue(x) for x in self.e.count[r]] + 
-                  [self.e.displayValue(self.e.exhausted[r])])
-      tally = "[" + tally + "]"
-      won = [c for c in range(self.e.b.numCandidates)
-             if self.e.wonAtRound[c] == r]
-      won.sort()
-      won = str(won)
-      lost = []
-      if (r < self.e.numRounds - 1) and self.e.roundInfo[r+1]["action"][0] == "eliminate":
-        lost = self.e.roundInfo[r+1]["action"][1] 
-        lost.sort()
-        lost = str(lost)
-      xfer = []
-      if (r < self.e.numRounds - 1) and self.e.roundInfo[r+1]["action"][0] == "surplus":
-        xfer = self.e.roundInfo[r+1]["action"][1] 
-        xfer.sort()
-        xfer = str(xfer)
-  
-      roundLine = """\
+        self.generateHeader()
+
+        for r in range(self.e.numRounds):
+            roundStage = r
+            if self.e.methodName == "ERS97 STV":
+                roundStage = self.e.roundToStage(r)
+
+            index = str(roundStage + 1)
+            tally = ", ".join(
+                [self.e.displayValue(x) for x in self.e.count[r]] + [self.e.displayValue(self.e.exhausted[r])]
+            )
+            tally = "[" + tally + "]"
+            won = [c for c in range(self.e.b.numCandidates) if self.e.wonAtRound[c] == r]
+            won.sort()
+            won = str(won)
+            lost = []
+            if (r < self.e.numRounds - 1) and self.e.roundInfo[r + 1]["action"][0] == "eliminate":
+                lost = self.e.roundInfo[r + 1]["action"][1]
+                lost.sort()
+                lost = str(lost)
+            xfer = []
+            if (r < self.e.numRounds - 1) and self.e.roundInfo[r + 1]["action"][0] == "surplus":
+                xfer = self.e.roundInfo[r + 1]["action"][1]
+                xfer.sort()
+                xfer = str(xfer)
+
+            roundLine = """\
  -
   Stage: %s
   Tally: %s
   Won:   %s
   Lost:  %s
   Xfer:  %s
-""" % (index, tally, won, lost, xfer)
-      self.output(roundLine)
+""" % (
+                index,
+                tally,
+                won,
+                lost,
+                xfer,
+            )
+            self.output(roundLine)
